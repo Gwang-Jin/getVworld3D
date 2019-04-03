@@ -57,13 +57,17 @@ public class Building3dCrawler {
 	static String layerName = "facility_build";
 	static int level = 15;	
 	
+	//독도의 지형과 건물은 레벨 13에서 받아와야 한다. 독도의 지형 데이터는 DEM 쪽에 없고 여기에 함께 포함되어 있다.
+	//static String layerName = "facility_dokdo";
+	//static int level = 13;
+	
 	static double unit = 360 / (Math.pow(2, level) * 10); //15레벨의 격자 크기(단위:경위도)
 	
 	static HashSet<String> jpgList;
 	static HashSet<String> fileNamesXdo;
 	
 	private static String[] getCoordination() {		
-		
+		//String minmax = "37.236867, 131.859825,37.248378, 131.873606"; 독도는 이 좌표로 받으면 된다.
 		String minmax = "37.560639, 126.991816,37.571219, 126.999605"; //sample 좌표
 		String[] temp1 = minmax.replaceAll(" ", "").split(",");
 		return new String[]{temp1[1],temp1[0], temp1[3],temp1[2]};
@@ -256,7 +260,12 @@ public class Building3dCrawler {
 		double objY = (objectBox[1]+objectBox[4])/2;
 		double objZ = (objectBox[2]+objectBox[5])/2;
 		
-		int vertexCount = pU32(bis);		
+		int vertexCount = pU32(bis);	
+		
+		if (vertexCount<=0) { //데이터 오류일 경우 건너뜀
+			bis.close();
+			return;
+		}
 		
 		double[][] vertex = new double[vertexCount][8];
 		
@@ -356,10 +365,15 @@ public class Building3dCrawler {
 		float[] objxyz = rotate3d((float)objX, (float)objY, (float)objZ, lon, lat);
 		
 		p1.x = lon;
-	    p1.y = lat;	
-	    trans.transform(p1, p2);		
+	    	p1.y = lat;	
+	    	trans.transform(p1, p2);		
 		
 		int vertexCount = pU32(bis);	
+		
+		if (vertexCount<=0) { //데이터 오류일 경우 건너뜀
+			bis.close();
+			return;
+		}
 		
 		double[][] vertex = new double[vertexCount][8];
 		
@@ -459,12 +473,13 @@ public class Building3dCrawler {
 		double objZ = (objectBox[2]+objectBox[5])/2;
 		
 		int faceNum = pU8(bis);
+		if (fileName.equals("dongdo.xdo")&&faceNum<0) faceNum *= -1; //독도중 동도의 특별한 데이터 오류를 정정한다
 		
 		for (int j=0 ; j<faceNum ; j++) {
 			
 			int vertexCount = pU32(bis);			
-			
-			double[][] vertex = new double[vertexCount][8];
+			if (vertexCount<=0) continue; //데이터 오류는 건너뜀
+			double[][] vertex = new double[vertexCount][8];			
 			
 			for (int i =0 ; i<vertexCount ; i++) {
 				
@@ -506,18 +521,19 @@ public class Building3dCrawler {
 			
 			int nailSize = pU32(bis);
 			
+			writeNailData_fake(bis, imageName,nailSize); //이렇게 강제로 읽어서 해당 부분의 바이트를 소모해주지 않으면 다음 루프에서 읽어야 할 곳을 읽지 못해 에러가 난다.
 			//writeNailData(bis, imageName,nailSize);
 			if (!jpgList.contains(imageName)) sendQueryForBin(queryAddrForJpg+imageName, storageFolder+"jpg\\"+imageName);
 			//저장장소에 있는 텍스쳐 파일을 obj와 같은 곳에 복사해준다.
 			fileCopy(storageFolder+"jpg\\"+imageName, targetFolder+"xdo_obj\\"+imageName);
 			
-			bw.write("g "+key);
+			bw.write("g "+key+"_"+j);
 			bw.newLine();
 			
 			//material의 기본적 속성은 임의로 아래와 같이 쓴다.
 			//mtl 파일의 자세한 스펙은 아래를 참조
 			//http://paulbourke.net/dataformats/mtl/
-			mtlSubWriter(bwm, key,imageName);
+			mtlSubWriter(bwm, key+"_"+j ,imageName);
 			
 			for (int i=0 ; i<vertexCount ; i++) {				
 				bw.write("v "+vertex[i][0]+" "+vertex[i][1]+" "+vertex[i][2]);	
@@ -532,7 +548,7 @@ public class Building3dCrawler {
 				bw.newLine();
 			}
 			
-			bw.write("usemtl "+key);
+			bw.write("usemtl "+key+"_"+j);
 			bw.newLine();
 			
 			for (int i=0 ; i<indexedNumber ; i=i+3) {
@@ -569,15 +585,16 @@ public class Building3dCrawler {
 		float[] objxyz = rotate3d((float)objX, (float)objY, (float)objZ, lon, lat);
 		
 		p1.x = lon;
-	    p1.y = lat;	
-	    trans.transform(p1, p2);
+	    	p1.y = lat;	
+	    	trans.transform(p1, p2);
 		
 		int faceNum = pU8(bis);		
+		if (fileName.equals("dongdo.xdo")&&faceNum<0) faceNum *= -1;
 		
 		for (int j=0 ; j<faceNum ; j++) {
 
 			int vertexCount = pU32(bis);			
-			
+			if (vertexCount<=0) continue;
 			double[][] vertex = new double[vertexCount][8];
 			
 			for (int i =0 ; i<vertexCount ; i++) {
@@ -622,14 +639,15 @@ public class Building3dCrawler {
 			
 			int nailSize = pU32(bis);
 			
+			writeNailData_fake(bis, imageName,nailSize); //이렇게 강제로 읽어서 해당 부분의 바이트를 소모해주지 않으면 다음 루프에서 읽어야 할 곳을 읽지 못해 에러가 난다.
 			//writeNailData(bis, imageName,nailSize);
 			//저장장소에 있는 텍스쳐 파일을 obj와 같은 곳에 복사해준다.
 			fileCopy(storageFolder+"jpg\\"+imageName, targetFolder+"xdo_obj_UTMK\\"+imageName);
 			
-			bw.write("g "+key);
+			bw.write("g "+key+"_"+j);
 			bw.newLine();
 			
-			mtlSubWriter(bwm, key,imageName);
+			mtlSubWriter(bwm, key+"_"+j,imageName);
 			
 			for (int i=0 ; i<vertexCount ; i++) {				
 				bw.write("v "+vertex[i][0]+" "+vertex[i][1]+" "+vertex[i][2]);	
@@ -645,7 +663,7 @@ public class Building3dCrawler {
 				bw.newLine();
 			}
 			
-			bw.write("usemtl "+key);
+			bw.write("usemtl "+key+"_"+j);
 			bw.newLine();
 			
 			for (int i=0 ; i<indexedNumber ; i=i+3) {
@@ -685,6 +703,13 @@ public class Building3dCrawler {
 		
 	}
 
+	//xdo 에 기본적으로 포함된 최하위 해상도 텍스쳐 파일을 꺼내서 저장하지 않고 건너뛴다.
+	private static void writeNailData_fake(BufferedInputStream bis, String imageName, int nailSize) throws IOException {
+		
+		byte[] b = new byte[nailSize];
+		int readByteNo = bis.read(b);
+		return;
+	}
 
 	//xdo 에 기본적으로 포함된 최하위 해상도 텍스쳐 파일을 꺼낸다.
 	private static void writeNailData(BufferedInputStream bis, String fileName, int nailSize) throws IOException {
