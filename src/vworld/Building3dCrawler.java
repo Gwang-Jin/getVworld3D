@@ -250,6 +250,10 @@ public class Building3dCrawler {
 		BufferedInputStream bis = new BufferedInputStream(new FileInputStream(new File(storageFolder+"xdo_Files\\"+fileName)));
 		
 		int type = pU8(bis);
+		if (type!=8) {
+			System.out.println(fileName+" 파일이 서버에 없음!!!!!!!!!!!!!!!");
+			return;
+		}
 		int objectId = pU32(bis);
 		int keyLen = pU8(bis);
 		String key = pChar(bis,keyLen);
@@ -352,6 +356,10 @@ public class Building3dCrawler {
 		BufferedInputStream bis = new BufferedInputStream(new FileInputStream(new File(storageFolder+"xdo_Files\\"+fileName)));		
 		
 		int type = pU8(bis);
+		if (type!=8) {
+			System.out.println(fileName+" 파일이 서버에 없음!!!!!!!!!!!!!!!");
+			return;
+		}
 		int objectId = pU32(bis);
 		int keyLen = pU8(bis);
 		String key = pChar(bis,keyLen);
@@ -462,6 +470,10 @@ public class Building3dCrawler {
 		
 
 		int type = pU8(bis);
+		if (type!=8) {
+			System.out.println(fileName+" 파일이 서버에 없음!!!!!!!!!!!!!!!");
+			return;
+		}
 		int objectId = pU32(bis);
 		int keyLen = pU8(bis);
 		String key = pChar(bis,keyLen);
@@ -572,6 +584,10 @@ public class Building3dCrawler {
 		BufferedInputStream bis = new BufferedInputStream(new FileInputStream(new File(storageFolder+"xdo_Files\\"+fileName)));		
 		
 		int type = pU8(bis);
+		if (type!=8) {
+			System.out.println(fileName+" 파일이 서버에 없음!!!!!!!!!!!!!!!");
+			return;
+		}
 		int objectId = pU32(bis);
 		int keyLen = pU8(bis);
 		String key = pChar(bis,keyLen);
