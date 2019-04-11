@@ -485,7 +485,8 @@ public class Building3dCrawler {
 		double objZ = (objectBox[2]+objectBox[5])/2;
 		
 		int faceNum = pU8(bis);
-		if (fileName.equals("dongdo.xdo")&&faceNum<0) faceNum *= -1; //독도중 동도의 특별한 데이터 오류를 정정한다
+		faceNum = Math.abs(faceNum); // 면의 갯수가 음수가 생기는 경우를 정정한다
+		//if (fileName.equals("dongdo.xdo")&&faceNum<0) faceNum *= -1; //독도중 동도의 특별한 데이터 오류를 정정한다
 		
 		for (int j=0 ; j<faceNum ; j++) {
 			
